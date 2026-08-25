@@ -10,7 +10,10 @@ from time import sleep
 from classifier import directory_indexing, index_file
 from database import FileInfo
 
-debug = True
+STATE = {
+    "should_log": False,
+    "debug": False
+}
 TEMPLATE = {
     "audio": "{path}/Audios",
     "video": "{path}/Videos",
@@ -27,7 +30,7 @@ TEMPLATE = {
 TEMPLATE_DEFAULT = "{path}/AnyKind"
 
 
-def move(src: FileInfo, root: Path, target: Path, dryrun: bool = False):
+def move(src: FileInfo, root: Path, target: Path, dryrun: bool = False, should_log: bool = False):  # noqa: E501
     """Move files from here and there"""
     include_parent = Path(src.parent) != root
     parent = "" if not include_parent else src.parent_rel
@@ -36,7 +39,8 @@ def move(src: FileInfo, root: Path, target: Path, dryrun: bool = False):
     dst = kind_dst / parent / basename(src.path)
 
     if dryrun:
-        print(f"Moving {basename(src.path)!r} to {rel_dst!s}")
+        if should_log:
+            print(f"Moving {basename(src.path)!r} to {rel_dst!s}")
         sleep(0.0001)
         return
     if not dst.parent.exists():
@@ -44,8 +48,10 @@ def move(src: FileInfo, root: Path, target: Path, dryrun: bool = False):
     mv(src.path, dst)
 
 
-def main(path: str, target: str, dryrun: bool = False):
+def main(path: str, target: str = "", dryrun: bool = False, log: bool = False):
     """Sort directory contents based on apparent paths."""
+    if not target:
+        target = path
     if Path(target).parent == Path(path):
         print("Deep scanning will conflict with current state. Target path must not be a child of the source path")  # noqa: E501
         return
@@ -76,7 +82,7 @@ def main(path: str, target: str, dryrun: bool = False):
 
     entries = FileInfo.all()
     for entry in tqdm(entries, "Moving...", unit="files"):
-        move(entry, Path(path), Path(target), dryrun)
+        move(entry, Path(path), Path(target), dryrun, log)
 
 
 if __name__ == "__main__":
