@@ -10,6 +10,5 @@ This program only sorts messed up structures into known ones. Works for director
 ```bash
 git clone https://github.com/RimuEirnarn/LumiFSort
 cd LumiFSort
-python main.py /path/to/src /path/to/temp
-mv /path/to/temp /path/to/src
+python main.py /path/to/src
 ```
