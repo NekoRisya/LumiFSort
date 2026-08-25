@@ -3,7 +3,7 @@
 This program only sorts messed up structures into known ones. Works for directories with classifiers.
 
 > [!WARNING]
-> It can mess up your structure and also doesn't support in-place sorting.
+> It can mess up your structure.
 
 ## Installation & Usage
 

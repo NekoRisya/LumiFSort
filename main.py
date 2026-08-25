@@ -1,6 +1,6 @@
 from os import mkdir, walk
 from shutil import move as mv
-from os.path import exists, basename, join, getsize, realpath
+from os.path import exists, basename, join
 from pathlib import Path
 
 from argh import dispatch_command
@@ -9,8 +9,6 @@ from time import sleep
 
 from classifier import directory_indexing, index_file
 from database import FileInfo
-from utils import format_bytes
-from extrec import recognize
 
 debug = True
 TEMPLATE = {
@@ -34,10 +32,11 @@ def move(src: FileInfo, root: Path, target: Path, dryrun: bool = False):
     include_parent = Path(src.parent) != root
     parent = "" if not include_parent else src.parent_rel
     kind_dst = Path(TEMPLATE.get(src.kind, TEMPLATE_DEFAULT).format(path=target))  # noqa: E501
+    rel_dst = Path(TEMPLATE.get(src.kind, TEMPLATE_DEFAULT).format(path="$TARGET"))  # noqa: E501
     dst = kind_dst / parent / basename(src.path)
 
     if dryrun:
-        print(f"Moving {basename(src.path)!r} to {dst!s}")
+        print(f"Moving {basename(src.path)!r} to {rel_dst!s}")
         sleep(0.0001)
         return
     if not dst.parent.exists():
@@ -47,21 +46,26 @@ def move(src: FileInfo, root: Path, target: Path, dryrun: bool = False):
 
 def main(path: str, target: str, dryrun: bool = False):
     """Sort directory contents based on apparent paths."""
-    if target in path:
-        print("Deep scanning will conflict against pre-existing snapshots. Target path must not be a child of path")  # noqa: E501
+    if Path(target).parent == Path(path):
+        print("Deep scanning will conflict with current state. Target path must not be a child of the source path")  # noqa: E501
         return
     if not exists(target):
         print(f"Target [{basename(target)}] Doesn't exists... trying to mkdir...")  # noqa: E501
         mkdir(target)
-    for key, value in TEMPLATE.copy().items():
-        TEMPLATE[key] = value.format(path=target)
+    ignore_checks = [value.format(path=target) for value in TEMPLATE.values()]  # noqa: E501
+    ignore_checks.append(TEMPLATE_DEFAULT.format(path=target))
 
     count = 0
+    print(f"Indexing... ({count})", end='\r', flush=True)
     for root, directories, files in walk(path):
         if root != path:
             break
         for directory in directories:
-            directory_indexing(Path(join(root, directory)))
+            absdir = Path(join(root, directory))
+            if str(absdir) in ignore_checks:
+                print(absdir)
+                continue
+            directory_indexing(absdir)
             count += 1
             print(f"Indexing... ({count})", end="\r", flush=True)
 
@@ -69,7 +73,6 @@ def main(path: str, target: str, dryrun: bool = False):
             index_file(root, file)
             count += 1
             print(f"Indexing... ({count})", end="\r", flush=True)
-    print()
 
     entries = FileInfo.all()
     for entry in tqdm(entries, "Moving...", unit="files"):
