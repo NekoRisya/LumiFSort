@@ -30,7 +30,7 @@ TEMPLATE = {
 TEMPLATE_DEFAULT = "{path}/AnyKind"
 
 
-def move(src: FileInfo, root: Path, target: Path, dryrun: bool = False, should_log: bool = False):  # noqa: E501
+def move(src: FileInfo, root: Path, target: Path, dryrun: bool = False, should_log: bool = True):  # noqa: E501
     """Move files from here and there"""
     include_parent = Path(src.parent) != root
     parent = "" if not include_parent else src.parent_rel
