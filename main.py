@@ -48,7 +48,7 @@ def move(src: FileInfo, root: Path, target: Path, dryrun: bool = False, should_l
     mv(src.path, dst)
 
 
-def main(path: str, target: str = "", dryrun: bool = False, log: bool = False):
+def main(path: str, target: str = "", dryrun: bool = False, log: bool = True):
     """Sort directory contents based on apparent paths."""
     if not target:
         target = path
