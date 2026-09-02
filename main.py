@@ -3,7 +3,7 @@ from shutil import move as mv
 from os.path import exists, basename, join
 from pathlib import Path
 
-from argh import dispatch_command
+from argh import dispatch_command, arg
 from tqdm import tqdm
 from time import sleep
 
@@ -22,7 +22,7 @@ TEMPLATE = {
     "code": "{path}/Programs/Codes",
     "document": "{path}/Documents",
     "font": "{path}/Documents/Fonts",
-    "archive": "{path}/Archives",
+    "archive": "{path}/Archive",
     "presentation": "{path}/Documents/Presentations",
     "spreadsheet": "{path}/Documents/Spreadsheets",
     "project": "{path}/Projects"
@@ -48,8 +48,13 @@ def move(src: FileInfo, root: Path, target: Path, dryrun: bool = False, should_l
     mv(src.path, dst)
 
 
-def main(path: str, target: str = "", dryrun: bool = False, log: bool = True):
+@arg("path", help="Source path")
+@arg("-t", '--target', help="Target path (default to source path)")
+@arg("-d", "--dryrun", help="Dry run")
+@arg("-dl", "--disable-log", help="Disable log")
+def main(path: str, target: str = "", dryrun: bool = False, disable_log: bool = False):  # noqa: E501
     """Sort directory contents based on apparent paths."""
+    should_log = not disable_log
     if not target:
         target = path
     if Path(target).parent == Path(path):
@@ -58,8 +63,9 @@ def main(path: str, target: str = "", dryrun: bool = False, log: bool = True):
     if not exists(target):
         print(f"Target [{basename(target)}] Doesn't exists... trying to mkdir...")  # noqa: E501
         mkdir(target)
-    ignore_checks = [value.format(path=target) for value in TEMPLATE.values()]  # noqa: E501
-    ignore_checks.append(TEMPLATE_DEFAULT.format(path=target))
+    normalized_target = Path(target)
+    ignore_checks = [str(Path(value.format(path=normalized_target))) for value in TEMPLATE.values()]  # noqa: E501
+    ignore_checks.append(str(Path(TEMPLATE_DEFAULT.format(path=normalized_target))))
 
     count = 0
     print(f"Indexing... ({count})", end='\r', flush=True)
@@ -69,7 +75,6 @@ def main(path: str, target: str = "", dryrun: bool = False, log: bool = True):
         for directory in directories:
             absdir = Path(join(root, directory))
             if str(absdir) in ignore_checks:
-                print(absdir)
                 continue
             directory_indexing(absdir)
             count += 1
@@ -82,7 +87,7 @@ def main(path: str, target: str = "", dryrun: bool = False, log: bool = True):
 
     entries = FileInfo.all()
     for entry in tqdm(entries, "Moving...", unit="files"):
-        move(entry, Path(path), Path(target), dryrun, log)
+        move(entry, Path(path), Path(target), dryrun, should_log)
 
 
 if __name__ == "__main__":
