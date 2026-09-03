@@ -1,4 +1,4 @@
-# RimuFileSort / LumiFSort
+# LumiFSort
 
 This program only sorts messed up structures into known ones. Works for directories with classifiers.
 
